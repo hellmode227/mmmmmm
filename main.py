@@ -19,12 +19,10 @@ st.write("데이터프레임 컬럼 이름:")
 st.write(data.columns)
 
 # Streamlit 앱 제목
-st.title("지역별 중학생 인구 비율")
+st.title("지역별 인구 분석")
 
-# 지역 선택
+# 지역 선택 및 데이터 필터링
 region = st.selectbox("지역을 선택하세요:", data['행정구역'].unique())
-
-# 선택한 지역 데이터 필터링
 region_data = data[data['행정구역'] == region]
 
 st.write("선택된 지역 데이터:")
@@ -32,18 +30,6 @@ st.write(region_data)
 
 # 데이터 처리 및 시각화
 try:
-    # 총 인구수 컬럼 확인
-    if '2024년06월_계_총인구수' not in region_data.columns:
-        st.error("총 인구수 컬럼이 데이터에 없습니다.")
-        st.stop()
-    
-    # 중학생 인구수 컬럼 확인
-    age_columns = ['2024년06월_계_13세', '2024년06월_계_14세', '2024년06월_계_15세']
-    for col in age_columns:
-        if col not in region_data.columns:
-            st.error(f"{col} 컬럼이 데이터에 없습니다.")
-            st.stop()
-    
     # 총 인구수
     total_population_str = region_data['2024년06월_계_총인구수'].iloc[0]
     total_population = int(total_population_str.replace(",", ""))
@@ -78,3 +64,58 @@ try:
 except Exception as e:
     st.error(f"오류가 발생했습니다: {e}")
     st.write("오류 내용:", e)
+
+# 연령대별 인구 분포 시각화
+age_groups = [
+    '2024년06월_계_0세', '2024년06월_계_1세', '2024년06월_계_2세',
+    '2024년06월_계_3세', '2024년06월_계_4세', '2024년06월_계_5세',
+    '2024년06월_계_6세', '2024년06월_계_7세', '2024년06월_계_8세',
+    '2024년06월_계_9세', '2024년06월_계_10세', '2024년06월_계_11세',
+    '2024년06월_계_12세', '2024년06월_계_13세', '2024년06월_계_14세',
+    '2024년06월_계_15세', '2024년06월_계_16세', '2024년06월_계_17세',
+    '2024년06월_계_18세'
+]
+
+if all(col in region_data.columns for col in age_groups):
+    age_population = [int(region_data[col].iloc[0].replace(",", "")) for col in age_groups]
+    age_labels = [col.split('_')[-1] for col in age_groups]
+    
+    fig2, ax2 = plt.subplots()
+    ax2.bar(age_labels, age_population, color='skyblue')
+    ax2.set_xlabel('연령대')
+    ax2.set_ylabel('인구수')
+    ax2.set_title('연령대별 인구 분포')
+    plt.xticks(rotation=90)
+    st.pyplot(fig2)
+else:
+    st.warning("연령대별 인구 데이터가 없습니다.")
+
+# 지역별 비교 기능
+regions = st.multiselect("비교할 지역을 선택하세요:", data['행정구역'].unique())
+if len(regions) > 1:
+    fig3, ax3 = plt.subplots()
+    for region in regions:
+        region_data = data[data['행정구역'] == region]
+        total_population_str = region_data['2024년06월_계_총인구수'].iloc[0]
+        total_population = int(total_population_str.replace(",", ""))
+        
+        middle_school_population_str_13 = region_data['2024년06월_계_13세'].iloc[0]
+        middle_school_population_str_14 = region_data['2024년06월_계_14세'].iloc[0]
+        middle_school_population_str_15 = region_data['2024년06월_계_15세'].iloc[0]
+        
+        middle_school_population = (
+            int(middle_school_population_str_13.replace(",", "")) +
+            int(middle_school_population_str_14.replace(",", "")) +
+            int(middle_school_population_str_15.replace(",", ""))
+        )
+        
+        middle_school_percentage = (middle_school_population / total_population) * 100
+        ax3.bar(region, middle_school_percentage, label=region)
+    
+    ax3.set_xlabel('지역')
+    ax3.set_ylabel('중학생 인구 비율 (%)')
+    ax3.set_title('지역별 중학생 인구 비율 비교')
+    ax3.legend()
+    st.pyplot(fig3)
+else:
+    st.warning("비교할 지역을 두 개 이상 선택하세요.")
