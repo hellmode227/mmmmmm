@@ -14,6 +14,10 @@ except Exception as e:
     st.error(f"파일 로드 중 오류가 발생했습니다: {e}")
     st.stop()
 
+# 데이터프레임의 컬럼 이름 확인
+st.write("데이터프레임 컬럼 이름:")
+st.write(data.columns)
+
 # Streamlit 앱 제목
 st.title("지역별 중학생 인구 비율 및 분석")
 
@@ -29,6 +33,11 @@ st.write(region_data)
 # 연령대 선택
 age_group = st.selectbox("연령대를 선택하세요:", ['13세', '14세', '15세'])
 age_column = f'2024년06월_계_{age_group}세'
+
+if age_column not in region_data.columns:
+    st.error(f"컬럼 '{age_column}'이 데이터프레임에 존재하지 않습니다. 컬럼 이름을 확인하세요.")
+    st.stop()
+
 age_population_str = region_data[age_column].iloc[0]
 age_population = int(age_population_str.replace(",", ""))
 st.write(f"{age_group} 인구수:", age_population)
